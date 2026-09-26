@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NSRH HUB — Distributed Object Storage</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='b1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2338BDF8'/%3E%3Cstop offset='100%25' stop-color='%230066FF'/%3E%3C/linearGradient%3E%3ClinearGradient id='b2' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%230052FF'/%3E%3Cstop offset='100%25' stop-color='%232563EB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M42 16 L58 16 L34 68 L20 68 Z' fill='%230066FF'/%3E%3Cpath d='M42 16 L58 16 L50 32 Z' fill='url(%23b1)'/%3E%3Cpath d='M58 16 L84 68 L70 68 L50 32 Z' fill='%230F172A'/%3E%3Cpath d='M20 68 L84 68 L75 84 L28 84 Z' fill='url(%23b2)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&family=Caveat:wght@500;600;700&family=Courier+Prime:wght@400;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>
+:root{
+  --bg:#EAF1FB; --sidebar:rgba(255,255,255,0.38); --surface:rgba(255,255,255,0.40); --surface-2:rgba(255,255,255,0.55);
+  --border:rgba(255,255,255,0.55); --text:#1B2333; --dim:#5B6478; --faint:#8A93A8;
+  --good:#16A34A; --good-dim:#16A34A22; --warn:#D97706; --warn-dim:#D9770622;
+  --bad:#DC2626; --bad-dim:#DC262622; --brand:#2F6BFF; --brand-light:#7DD3FC; --brand-dim:#2F6BFF1E;
+  --glass-hi:rgba(255,255,255,0.85); --glass-edge:rgba(255,255,255,0.9); --glass-shadow:rgba(80,110,200,0.18);
+  --radius:18px; --font:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(900px 620px at 8% -6%, #C9E8FF 0%, transparent 60%),
+    radial-gradient(800px 640px at 95% 8%, #FBD5F0 0%, transparent 58%),
+    radial-gradient(1000px 780px at 30% 108%, #D6F5E3 0%, transparent 60%),
+    radial-gradient(900px 700px at 100% 100%, #E4D9FF 0%, transparent 58%),
+    linear-gradient(180deg, #EEF3FC 0%, #E7EEFB 100%);
+  background-attachment:fixed;
+  min-height:100vh;
+}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(120,140,190,0.35);border-radius:8px}
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:240px;flex:none;background:var(--sidebar);border-right:1px solid var(--border);
+  padding:20px 16px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;
+  backdrop-filter:blur(28px) saturate(1.5);-webkit-backdrop-filter:blur(28px) saturate(1.5);
+  box-shadow:1px 0 0 rgba(255,255,255,0.6) inset, 8px 0 30px var(--glass-shadow);position:relative;
+}
+.logo-container{display:flex;align-items:center;gap:12px;padding:2px 4px;cursor:pointer}
+.logo-svg{width:38px;height:38px;flex:none}
+.logo-brand{display:flex;flex-direction:column;line-height:1.05}
+.logo-title{font-size:17px;font-weight:900;letter-spacing:-0.02em}
+.logo-title .blue{color:#0062FF}
+.logo-title .white{color:var(--text)}
+.logo-sub{font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--dim);
+  font-size:13.5px;font-weight:500;cursor:pointer;border:none;background:none;text-align:left;width:100%;font-family:var(--font);transition:all .15s}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:var(--brand-dim);color:var(--brand);font-weight:600}
+.nav-item svg{width:16px;height:16px;flex:none}
+.main{flex:1;min-width:0;padding:24px 32px 50px}
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.topbar-titles h1{font-size:22px;font-weight:800;margin:0;letter-spacing:-0.02em}
+.topbar-titles p{margin:4px 0 0;font-size:12.5px;color:var(--dim)}
+.status-pill{display:flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--border);
+  border-radius:999px;background:var(--surface);font-size:12.5px;font-family:var(--mono);color:var(--dim)}
+.status-stack{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
+.dot-good{background:var(--good)} .dot-warn{background:var(--warn)} .dot-bad{background:var(--bad)}
+.section{margin-bottom:24px;scroll-margin-top:20px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.section-head h2{font-size:15px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+.section-sub{font-size:12px;color:var(--dim)}
+.cards-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card,.panel,.node,.modal,.settings-card,.status-pill,.toast{
+  position:relative;isolation:isolate;overflow:hidden;
+  backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);
+  box-shadow:0 1px 1px var(--glass-edge) inset, 0 0 0 1px rgba(255,255,255,0.5) inset, 0 14px 34px var(--glass-shadow);
+}
+.card::before,.panel::before,.node::before,.modal::before,.settings-card::before{
+  content:'';position:absolute;top:-30%;left:-20%;width:65%;height:65%;
+  background:radial-gradient(circle, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0) 70%);
+  pointer-events:none;z-index:0;
+}
+.card>*,.panel>*,.node>*,.modal>*,.settings-card>*{position:relative;z-index:1}
+.card,.node,.settings-card{transition:transform .18s ease, box-shadow .18s ease}
+.card:hover,.node:hover,.settings-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 1px 1px var(--glass-edge) inset, 0 0 0 1px rgba(255,255,255,0.65) inset, 0 20px 42px var(--glass-shadow);
+}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card-label{font-size:11.5px;color:var(--dim);display:block;margin-bottom:6px;text-transform:uppercase;font-weight:600;letter-spacing:0.04em}
+.card-value{font-family:var(--mono);font-size:24px;font-weight:700}
+.card-foot{font-size:11.5px;color:var(--faint);display:block;margin-top:5px}
+.card-foot.good{color:var(--good)}
+.actions-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font-family:var(--font);font-size:13px;font-weight:600;border-radius:8px;border:1px solid transparent;
+  padding:9px 15px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;color:#fff;transition:filter .15s,transform .08s}
+.btn svg{width:14px;height:14px}
+.btn:hover{filter:brightness(1.15)} .btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-brand{background:linear-gradient(135deg,#57A6FF 0%,#2F6BFF 55%,#5B5CF0 100%);box-shadow:0 6px 16px rgba(47,107,255,0.4),0 1px 0 rgba(255,255,255,0.5) inset}
+.btn-warn{background:var(--warn-dim);color:var(--warn);border-color:rgba(217,119,6,0.35)}
+.btn-good{background:var(--good-dim);color:var(--good);border-color:rgba(22,163,74,0.35)}
+.btn-bad{background:var(--bad-dim);color:var(--bad);border-color:rgba(220,38,38,0.35)}
+.btn-ghost{background:rgba(255,255,255,0.5);border-color:var(--border);color:var(--dim)}
+.btn-ghost:hover{background:rgba(255,255,255,0.75)}
+.btn-sm{padding:6px 10px;font-size:11.5px}
+.nodes-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.node{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.node.failed{border-color:rgba(220,38,38,0.45)}
+.node-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.node-name{font-weight:600;font-size:13.5px}
+.badge{font-size:10.5px;font-family:var(--mono);padding:3px 8px;border-radius:999px;font-weight:600}
+.badge-good{color:var(--good);background:var(--good-dim)}
+.badge-warn{color:var(--warn);background:var(--warn-dim)}
+.badge-bad{color:var(--bad);background:var(--bad-dim)}
+.bar-track{height:6px;border-radius:99px;background:rgba(140,155,190,0.25);overflow:hidden;margin-bottom:7px}
+.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#57A6FF,#2F6BFF);transition:width .5s ease}
+.node-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim);font-family:var(--mono);margin-bottom:11px}
+.node .btn{width:100%;justify-content:center}
+.split{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar input[type=text],.toolbar select{background:var(--surface-2);border:1px solid var(--border);border-radius:9px;
+  color:var(--text);padding:7px 11px;font-size:12.5px;font-family:var(--font)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--dim);font-size:11px;padding:0 10px 9px;border-bottom:1px solid rgba(140,155,190,0.28);text-transform:uppercase;letter-spacing:0.03em}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--text)}
+td{padding:11px 10px;border-bottom:1px solid rgba(140,155,190,0.18);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.obj-row{cursor:pointer}
+tr.obj-row:hover td{background:rgba(255,255,255,0.45)}
+tr.obj-row.selected td{background:rgba(47,107,255,0.14)}
+.file-cell{display:flex;align-items:center;gap:9px;font-weight:500}
+.file-icon{width:26px;height:26px;border-radius:8px;background:var(--brand-dim);display:grid;place-items:center;flex:none;color:var(--brand);font-size:13px}
+.mono{font-family:var(--mono);color:var(--dim);font-size:12px}
+.replica-chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:5px;border:1px solid var(--border);color:var(--dim);background:var(--surface-2)}
+.chip.corrupt{color:var(--bad);border-color:rgba(220,38,38,0.35)}
+.detail-empty{color:var(--faint);font-size:12.5px;text-align:center;padding:32px 10px}
+.detail-title{font-weight:700;font-size:14.5px;margin-bottom:2px;word-break:break-all}
+.detail-sub{font-size:11.5px;color:var(--dim);margin-bottom:14px}
+.detail-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:8px 0;border-bottom:1px solid rgba(140,155,190,0.2)}
+.detail-row:last-child{border-bottom:none}
+.detail-row span:first-child{color:var(--dim);flex:none}
+.replica-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.replica-line{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-family:var(--mono);
+  padding:7px 10px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border)}
+.replica-line.corrupted{border-color:rgba(220,38,38,0.35)}
+.activity-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;max-height:420px;overflow-y:auto}
+.act-item{display:flex;gap:10px;font-size:12.5px}
+.act-dot{width:7px;height:7px;border-radius:50%;margin-top:5px;flex:none}
+.act-dot.good{background:var(--good)} .act-dot.info{background:var(--brand)}
+.act-dot.warn{background:var(--warn)} .act-dot.bad{background:var(--bad)}
+.act-msg{line-height:1.4}
+.act-time{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:2px}
+.overlay{position:fixed;inset:0;background:rgba(80,100,150,0.35);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:60;padding:16px}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;width:420px;max-width:100%}
+.modal h3{margin:0 0 6px;font-size:16px;font-weight:700}
+.modal p{margin:0 0 16px;font-size:12.5px;color:var(--dim);line-height:1.4}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:500}
+.field select,.field input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;
+  color:var(--text);padding:9px 10px;font-size:13px;font-family:var(--font)}
+.progress-outer{height:8px;background:rgba(140,155,190,0.25);border-radius:99px;overflow:hidden;margin:12px 0 4px}
+.progress-inner{height:100%;background:linear-gradient(90deg,#57A6FF,#2F6BFF);transition:width .2s ease}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.toasts{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:20px;display:flex;flex-direction:column;gap:8px;z-index:70}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--good);border-radius:12px;
+  padding:11px 15px;font-size:12.5px;min-width:240px;max-width:340px}
+.toast.info{border-left-color:var(--brand)} .toast.bad{border-left-color:var(--bad)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.settings-card{background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:16px}
+.notes-split{grid-template-columns:290px 1fr}
+.notes-list-panel{display:flex;flex-direction:column;max-height:calc(100vh - 130px)}
+.notes-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;margin-top:2px}
+.note-item{background:var(--surface-2);border:1px solid transparent;border-radius:12px;padding:11px 12px;cursor:pointer;transition:background .15s,border-color .15s}
+.note-item:hover{background:rgba(255,255,255,0.7)}
+.note-item.selected{background:rgba(47,107,255,0.14);border-color:rgba(47,107,255,0.35)}
+.note-item-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.note-item-title{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note-item-delete{background:none;border:none;color:var(--faint);font-size:16px;line-height:1;cursor:pointer;padding:2px 4px;border-radius:6px;flex:none}
+.note-item-delete:hover{color:var(--bad);background:var(--bad-dim)}
+.note-item-preview{font-size:11.5px;color:var(--dim);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
+.note-item-time{font-size:10.5px;color:var(--faint);margin-top:6px;font-family:var(--mono)}
+.notes-editor-panel{display:flex;flex-direction:column;min-height:calc(100vh - 130px)}
+.note-title-input{width:100%;border:none;background:transparent;outline:none;font-size:22px;font-weight:800;
+  color:var(--text);font-family:var(--font);padding:2px 2px 10px;letter-spacing:-0.01em}
+.note-title-input::placeholder{color:var(--faint)}
+.note-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px;border-radius:14px;
+  background:var(--surface-2);border:1px solid var(--border);margin-bottom:12px}
+.note-toolbar-group{display:flex;align-items:center;gap:4px;padding-right:8px;margin-right:2px;border-right:1px solid rgba(140,155,190,0.3)}
+.note-toolbar-group:last-child{border-right:none}
+.note-toolbar select{background:rgba(255,255,255,0.7);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);padding:6px 8px;font-size:12px;font-family:var(--font);cursor:pointer}
+.note-toolbar button{background:rgba(255,255,255,0.55);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);width:30px;height:30px;display:grid;place-items:center;cursor:pointer;font-size:14px;font-weight:700;transition:background .12s,transform .08s}
+.note-toolbar button:hover{background:rgba(255,255,255,0.9)}
+.note-toolbar button:active{transform:scale(.93)}
+.note-toolbar input[type=color]{width:30px;height:30px;border:1px solid var(--border);border-radius:8px;padding:2px;background:rgba(255,255,255,0.55);cursor:pointer}
+.note-editor-area{flex:1;min-height:360px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;
+  padding:20px 24px;font-size:15px;line-height:1.6;overflow-y:auto;outline:none}
+.note-editor-area:empty:before{content:'Start writing…';color:var(--faint)}
+.note-editor-area h1{font-size:28px;font-weight:800;margin:0.5em 0 0.3em;letter-spacing:-0.01em}
+.note-editor-area h2{font-size:21px;font-weight:700;margin:0.5em 0 0.3em}
+.note-editor-area blockquote{margin:0.6em 0;padding:6px 16px;border-left:3px solid var(--brand);color:var(--dim);font-style:italic}
+.note-editor-area ul{margin:0.4em 0;padding-left:24px}
+.note-editor-area font[size="2"]{font-size:13px}
+.note-editor-area font[size="3"]{font-size:16px}
+.note-editor-area font[size="5"]{font-size:22px}
+.note-editor-area font[size="6"]{font-size:28px}
+.note-editor-area font[size="7"]{font-size:36px}
+@media(max-width:1100px){.notes-split{grid-template-columns:1fr}.notes-list-panel{max-height:280px}}
+.loading-screen{display:grid;place-items:center;height:100vh;width:100%;color:var(--dim);font-size:13px}
+footer{margin-top:28px;font-size:11.5px;color:var(--faint);text-align:center}
+@media(max-width:1100px){.cards-4{grid-template-columns:repeat(2,1fr)}.nodes-grid{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.settings-grid{grid-template-columns:1fr}}
+@media(max-width:720px){.sidebar{display:none}.cards-4{grid-template-columns:1fr}.nodes-grid{grid-template-columns:1fr}.main{padding:16px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useRef} = React;
+
+/* ============================================================
+   REAL LOCAL BACKEND (server.py) — talks to the actual file
+   storage on this computer. All calls use relative URLs because
+   server.py serves this very page from http://127.0.0.1:8000.
+   ============================================================ */
+
+async function apiHealth(){
+  try{
+    const res = await fetch('/api/health', {cache:'no-store'});
+    if(!res.ok) return false;
+    const data = await res.json();
+    return !!data.ok;
+  }catch(e){
+    return false;
+  }
+}
+
+async function apiUpload(filename, contentType, buffer, checksum){
+  const res = await fetch('/api/upload', {
+    method:'POST',
+    headers:{
+      'X-Filename': encodeURIComponent(filename),
+      'X-Checksum': checksum,
+      'Content-Type': contentType || 'application/octet-stream',
+    },
+    body: buffer,
+  });
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* non-JSON error body, ignore */ }
+  if(!res.ok){
+    const msg = (data && data.error) ? data.error : `Backend upload failed (HTTP ${res.status})`;
+    throw new Error(msg);
+  }
+  if(!data || !data.file) throw new Error('Backend returned an unexpected response');
+  return data.file;
+}
+
+async function apiDownload(backendId){
+  const res = await fetch(`/api/download/${encodeURIComponent(backendId)}`);
+  if(!res.ok){
+    let msg = `Backend download failed (HTTP ${res.status})`;
+    try{ const data = await res.json(); if(data && data.error) msg = data.error; }catch(e){}
+    throw new Error(msg);
+  }
+  return await res.blob();
+}
+
+async function apiDeleteFile(backendId){
+  const res = await fetch(`/api/files/${encodeURIComponent(backendId)}`, {method:'DELETE'});
+  let data = null;
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok){
+    const msg = (data && data.error) ? data.error : `Backend delete failed (HTTP ${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function apiRenameFile(backendId, newName){
+  const res = await fetch(`/api/files/${encodeURIComponent(backendId)}`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({filename:newName}),
+  });
+  let data = null;
+  try{ data = await res.json(); }catch(e){}
+  if(!res.ok){
+    const msg = (data && data.error) ? data.error : `Backend rename failed (HTTP ${res.status})`;
+    throw new Error(msg);
+  }
+  if(!data || !data.file) throw new Error('Backend returned an unexpected response');
+  return data.file;
+}
+
+/* ============================================================
+   INDEXEDDB — the SIMULATED distributed layer only.
+   Nodes, replicas, corruption state, activity log and settings
+   live here. This is NOT the real backend; the real backend is
+   server.py + nsrh_storage/ on disk, reached via the API above.
+   ============================================================ */
+
+const DB_NAME='nsrh_hub_db', DB_VERSION=2;
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('objects')) db.createObjectStore('objects',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('nodes')) db.createObjectStore('nodes',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('activity')) db.createObjectStore('activity',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('notes')) db.createObjectStore('notes',{keyPath:'id'});
+    };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+  });
+}
+function dbGetAll(db,store){
+  return new Promise((res,rej)=>{ const r=db.transaction(store,'readonly').objectStore(store).getAll();
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+}
+function dbGet(db,store,key){
+  return new Promise((res,rej)=>{ const r=db.transaction(store,'readonly').objectStore(store).get(key);
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+}
+function dbPut(db,store,val){
+  return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(val);
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+function dbDelete(db,store,key){
+  return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).delete(key);
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+function dbClear(db,store){
+  return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).clear();
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); });
+}
+
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function formatBytes(bytes){
+  if(!bytes) return '0 B';
+  const units=['B','KB','MB','GB','TB'];
+  const i=Math.min(units.length-1, Math.floor(Math.log(bytes)/Math.log(1024)));
+  return (bytes/Math.pow(1024,i)).toFixed(i===0?0:2)+' '+units[i];
+}
+function extOf(name){ const d=name.lastIndexOf('.'); return d>0? name.slice(d+1).toUpperCase(): 'FILE'; }
+async function sha256Hex(buffer){
+  const hash = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function readFileWithProgress(file,onProgress){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onprogress = (e)=>{ if(e.lengthComputable) onProgress(Math.round(e.loaded/e.total*85)); };
+    reader.onload = ()=> resolve(reader.result);
+    reader.onerror = ()=> reject(reader.error || new Error('Could not read file'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+const NODE_CAPACITY = 2*1024*1024*1024;
+
+async function seedIfNeeded(db){
+  let nodes = await dbGetAll(db,'nodes');
+  if(nodes.length===0){
+    nodes = ['NSRH Node Alpha','NSRH Node Beta','NSRH Node Gamma','NSRH Node Delta'].map((name,i)=>(
+      {id:'node-'+(i+1), name, status:'healthy', usedBytes:0, objectCount:0, capacityBytes:NODE_CAPACITY}));
+    for(const n of nodes) await dbPut(db,'nodes',n);
+  }
+  let settings = await dbGet(db,'settings','config');
+  if(!settings){
+    settings = {key:'config', replicationFactor:3, namingPolicy:'reject'};
+    await dbPut(db,'settings',settings);
+  }
+  let activity = await dbGetAll(db,'activity');
+  if(activity.length===0){
+    const entry = {id:uid(), type:'info', msg:'NSRH HUB storage cluster online — 4 nodes active, quorum ready', time:new Date().toLocaleTimeString()};
+    await dbPut(db,'activity',entry);
+    activity=[entry];
+  }
+  return {nodes, settings, activity};
+}
+
+function NsrhLogoSvg({size=38}){
+  return (
+    <svg width={size} height={size} viewBox="0 0 240 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="logo-svg">
+      <defs>
+        <linearGradient id="nsrh-top" x1="70" y1="20" x2="135" y2="75" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#38BDF8"/>
+          <stop offset="50%" stopColor="#0077FF"/>
+          <stop offset="100%" stopColor="#0052FF"/>
+        </linearGradient>
+        <linearGradient id="nsrh-left" x1="40" y1="160" x2="115" y2="40" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#004BD6"/>
+          <stop offset="40%" stopColor="#0062FF"/>
+          <stop offset="100%" stopColor="#2563EB"/>
+        </linearGradient>
+        <linearGradient id="nsrh-bottom" x1="45" y1="150" x2="195" y2="150" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#0052FF"/>
+          <stop offset="50%" stopColor="#0066FF"/>
+          <stop offset="100%" stopColor="#2563EB"/>
+        </linearGradient>
+        <linearGradient id="nsrh-right" x1="120" y1="40" x2="200" y2="160" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#1E2430"/>
+          <stop offset="60%" stopColor="#111827"/>
+          <stop offset="100%" stopColor="#090D16"/>
+        </linearGradient>
+      </defs>
+      <path d="M 120 22 C 126 22 131 25 135 31 L 204 146 C 208 153 206 161 199 166 L 158 166 L 158 140 L 120 72 L 120 22 Z" fill="url(#nsrh-right)"/>
+      <path d="M 120 22 C 114 22 109 25 105 31 L 42 138 L 66 178 C 69 183 75 186 81 186 L 94 163 L 120 72 L 120 22 Z" fill="url(#nsrh-left)"/>
+      <path d="M 105 31 C 109 24 114 22 120 22 C 126 22 131 24 135 31 L 120 58 Z" fill="url(#nsrh-top)"/>
+      <path d="M 66 178 L 94 134 L 182 134 C 192 134 198 143 194 152 L 182 176 C 178 183 171 186 164 186 L 81 186 C 74 186 68 183 66 178 Z" fill="url(#nsrh-bottom)"/>
+      <path d="M 94 134 L 120 72 L 158 140 Z" fill="#000000" fillOpacity="0.14"/>
+    </svg>
+  );
+}
+
+function Icon({name}){
+  const paths = {
+    dashboard:"M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z",
+    objects:"M21 8 12 3 3 8l9 5 9-5Zm-9 5v10M3 8v9l9 5M21 8v9l-9 5",
+    nodes:"M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z",
+    logs:"M4 6h16M4 12h16M4 18h10",
+    notes:"M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm9 0v5h5M8 12h8M8 16h5",
+    add:"M12 5v14M5 12h14",
+    settings:"M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8-3a8 8 0 0 0-.2-1.8l2-1.6-2-3.4-2.4.9a8 8 0 0 0-1.6-.9L15.4 2H8.6l-.4 2.2a8 8 0 0 0-1.6.9l-2.4-.9-2 3.4 2 1.6A8 8 0 0 0 4 12a8 8 0 0 0 .2 1.8l-2 1.6 2 3.4 2.4-.9a8 8 0 0 0 1.6.9l.4 2.2h6.8l.4-2.2a8 8 0 0 0 1.6-.9l2.4.9 2-3.4-2-1.6A8 8 0 0 0 20 12Z",
+    upload:"M12 16V4M12 4 8 8M12 4l4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2",
+    download:"M12 4v12M12 16 8 12M12 16l4-4M4 20h16",
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[name]||''}/></svg>;
+}
+
+function App(){
+  const dbRef = useRef(null);
+  const [ready,setReady] = useState(false);
+  const [nodes,setNodes] = useState([]);
+  const [objects,setObjects] = useState([]);
+  const [settings,setSettings] = useState({replicationFactor:3, namingPolicy:'reject'});
+  const [activity,setActivity] = useState([]);
+  const [selected,setSelected] = useState(null);
+  const [showUpload,setShowUpload] = useState(false);
+  const [showLogoModal,setShowLogoModal] = useState(false);
+  const [uploading,setUploading] = useState(null);
+  const [toasts,setToasts] = useState([]);
+  const [activeNav,setActiveNav] = useState('dashboard');
+  const [searchText,setSearchText] = useState('');
+  const [statusFilter,setStatusFilter] = useState('all');
+  const [nodeFilter,setNodeFilter] = useState('all');
+  const [sortKey,setSortKey] = useState('createdAt');
+  const [sortDir,setSortDir] = useState('desc');
+  const [backendStatus,setBackendStatus] = useState('checking'); // 'checking' | 'online' | 'offline'
+  const [notes,setNotes] = useState([]);
+  const [selectedNoteId,setSelectedNoteId] = useState(null);
+
+  useEffect(()=>{
+    (async ()=>{
+      const database = await openDB();
+      dbRef.current = database;
+      const seeded = await seedIfNeeded(database);
+      const objs = await dbGetAll(database,'objects');
+      const savedNotes = await dbGetAll(database,'notes');
+      setNodes(seeded.nodes);
+      setSettings(seeded.settings);
+      setActivity(seeded.activity);
+      setObjects(objs.sort((a,b)=>b.createdAt-a.createdAt));
+      const sortedNotes = savedNotes.sort((a,b)=>b.updatedAt-a.updatedAt);
+      setNotes(sortedNotes);
+      if(sortedNotes.length) setSelectedNoteId(sortedNotes[0].id);
+      setReady(true);
+    })();
+  },[]);
+
+  // Backend connection status: check on load, then poll periodically.
+  // Never let a failed health check crash the app.
+  useEffect(()=>{
+    let cancelled = false;
+    async function check(){
+      const ok = await apiHealth();
+      if(!cancelled) setBackendStatus(ok ? 'online' : 'offline');
+    }
+    check();
+    const interval = setInterval(check, 6000);
+    return ()=>{ cancelled = true; clearInterval(interval); };
+  },[]);
+
+  const db = () => dbRef.current;
+  const nodeName = id => (nodes.find(n=>n.id===id)||{}).name || id;
+  const toast = (msg,kind='good') => {
+    const id = uid();
+    setToasts(t => [...t,{id,msg,kind}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)), 3400);
+  };
+  async function addLog(type,msg){
+    const entry = {id:uid(), type, msg, time:new Date().toLocaleTimeString()};
+    await dbPut(db(),'activity',entry);
+    setActivity(a => [entry,...a].slice(0,100));
+  }
+
+  const healthyCount = nodes.filter(n=>n.status==='healthy').length;
+  const totalObjects = objects.length;
+  const totalStorage = nodes.reduce((s,n)=>s+n.usedBytes,0);
+  const totalCapacity = nodes.reduce((s,n)=>s+n.capacityBytes,0);
+  const systemDegraded = healthyCount < nodes.length || objects.some(o=>o.status!=='healthy');
+
+  async function handleUpload(file){
+    if(!file) return;
+    if(backendStatus!=='online'){
+      toast('Local backend is offline — start server.py before uploading','bad');
+      return;
+    }
+    setUploading({progress:0, phase:'Reading file…'});
+    try{
+      const buffer = await readFileWithProgress(file, p=>setUploading(u=>u&&({...u,progress:p})));
+      setUploading(u=>u&&({...u,phase:'Computing SHA-256 checksum…', progress:87}));
+      const checksum = await sha256Hex(buffer);
+
+      let finalName = file.name;
+      const exists = objects.some(o=>o.name.toLowerCase()===finalName.toLowerCase());
+      if(exists){
+        if(settings.namingPolicy==='reject'){
+          toast(`An object named "${finalName}" already exists in NSRH HUB`,'bad');
+          setUploading(null); return;
+        }
+        const dot = finalName.lastIndexOf('.');
+        const base = dot>0? finalName.slice(0,dot): finalName;
+        const ext = dot>0? finalName.slice(dot): '';
+        let n=2, candidate;
+        do{ candidate = `${base} (${n})${ext}`; n++; } while(objects.some(o=>o.name.toLowerCase()===candidate.toLowerCase()));
+        finalName = candidate;
+      }
+
+      // ---- REAL backend: send actual bytes to server.py, which
+      // independently recalculates SHA-256 and only saves the file
+      // to disk if its own hash matches ours. ----
+      setUploading(u=>u&&({...u,phase:'Uploading to local backend & verifying…', progress:92}));
+      let backendRecord;
+      try{
+        backendRecord = await apiUpload(finalName, file.type, buffer, checksum);
+      }catch(err){
+        toast('Backend rejected the upload: '+err.message, 'bad');
+        await addLog('bad', `Backend upload of "${finalName}" failed: ${err.message}`);
+        setUploading(null);
+        return;
+      }
+
+      // ---- SIMULATED layer: fan the verified bytes out to healthy
+      // simulated nodes in IndexedDB for the distributed-storage demo. ----
+      setUploading(u=>u&&({...u,phase:'Backend verified SHA-256 — replicating across nodes…', progress:97}));
+      const healthy = [...nodes].filter(n=>n.status==='healthy').sort((a,b)=>a.usedBytes-b.usedBytes);
+      if(healthy.length===0){
+        toast('File saved on the real backend, but no healthy nodes are available to replicate it','bad');
+        await addLog('bad', `"${finalName}" saved on the local backend but could not be replicated — no healthy simulated nodes`);
+        setUploading(null); return;
+      }
+      const factor = settings.replicationFactor;
+      const targets = healthy.slice(0, Math.min(factor, healthy.length));
+
+      const id = uid();
+      const replicas = [];
+      let updatedNodes = [...nodes];
+      const replicaBlob = new Blob([buffer], {type:file.type});
+      for(const t of targets){
+        await dbPut(db(),'blobs',{id:`${id}:${t.id}`, blob:replicaBlob});
+        replicas.push({nodeId:t.id, corrupted:false});
+        updatedNodes = updatedNodes.map(n => n.id===t.id ? {...n, usedBytes:n.usedBytes+backendRecord.size, objectCount:(n.objectCount||0)+1} : n);
+        await dbPut(db(),'nodes', updatedNodes.find(n=>n.id===t.id));
+      }
+      const record = {
+        id, backendId:backendRecord.id, name:finalName, size:backendRecord.size, type:extOf(finalName),
+        checksum:backendRecord.checksum, createdAt:Date.now(), updatedAt:Date.now(), replicas,
+        status: targets.length>=factor?'healthy':'degraded',
+      };
+      await dbPut(db(),'objects',record);
+      setObjects(o=>[record,...o]);
+      setNodes(updatedNodes);
+      setSelected(record.id);
+      await addLog('good', `Stored ${finalName} (${formatBytes(backendRecord.size)}) on the real local backend — SHA-256: ${backendRecord.checksum.slice(0,12)}… — replicated to ${targets.length} simulated nodes`);
+      toast(`${finalName} uploaded to NSRH HUB`,'good');
+      setUploading(u=>u&&({...u,progress:100,phase:'Complete'}));
+      setTimeout(()=>{ setUploading(null); setShowUpload(false); }, 400);
+    }catch(err){
+      toast('Upload failed: '+err.message,'bad');
+      setUploading(null);
+    }
+  }
+
+  async function handleDownload(obj){
+    if(!obj) return;
+    if(!obj.backendId){
+      toast(`"${obj.name}" has no real backend record and cannot be downloaded`,'bad');
+      return;
+    }
+    let blob;
+    try{
+      blob = await apiDownload(obj.backendId);
+    }catch(err){
+      toast(`Download failed: ${err.message}`,'bad');
+      await addLog('bad', `Download of "${obj.name}" from the local backend failed: ${err.message}`);
+      return;
+    }
+    const buffer = await blob.arrayBuffer();
+    const actualHash = await sha256Hex(buffer);
+    if(actualHash !== obj.checksum){
+      toast(`Integrity checksum mismatch for "${obj.name}" — download blocked`,'bad');
+      await addLog('bad', `Integrity check FAILED for "${obj.name}" after backend download — checksum mismatch, download blocked`);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=obj.name; document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    await addLog('good', `Downloaded "${obj.name}" from the real local backend — cryptographic checksum verified`);
+    toast(`"${obj.name}" downloaded`,'good');
+  }
+
+  async function handleDelete(obj){
+    if(!confirm(`Delete "${obj.name}" and all ${obj.replicas.length} replicas from NSRH HUB?`)) return;
+    if(obj.backendId){
+      try{
+        await apiDeleteFile(obj.backendId);
+      }catch(err){
+        toast(`Backend delete failed: ${err.message}`,'bad');
+        await addLog('bad', `Failed to delete "${obj.name}" from the local backend: ${err.message}`);
+        return;
+      }
+    }
+    let updatedNodes = [...nodes];
+    for(const r of obj.replicas){
+      await dbDelete(db(),'blobs',`${obj.id}:${r.nodeId}`);
+      updatedNodes = updatedNodes.map(n => n.id===r.nodeId ? {...n, usedBytes:Math.max(0,n.usedBytes-obj.size), objectCount:Math.max(0,(n.objectCount||1)-1)} : n);
+      const nd = updatedNodes.find(n=>n.id===r.nodeId);
+      if(nd) await dbPut(db(),'nodes',nd);
+    }
+    await dbDelete(db(),'objects',obj.id);
+    setObjects(os=>os.filter(o=>o.id!==obj.id));
+    setNodes(updatedNodes);
+    if(selected===obj.id) setSelected(null);
+    await addLog('warn', `Deleted "${obj.name}" from the local backend and cleared ${obj.replicas.length} simulated replicas`);
+    toast(`"${obj.name}" removed`,'good');
+  }
+
+  async function handleRename(obj,newNameRaw){
+    const newName = (newNameRaw||'').trim();
+    if(!newName || newName===obj.name) return;
+    const exists = objects.some(o=>o.id!==obj.id && o.name.toLowerCase()===newName.toLowerCase());
+    if(exists){ toast(`An object named "${newName}" already exists in NSRH HUB`,'bad'); return; }
+    let backendName = newName;
+    if(obj.backendId){
+      try{
+        const backendRecord = await apiRenameFile(obj.backendId, newName);
+        backendName = backendRecord.filename;
+      }catch(err){
+        toast(`Backend rename failed: ${err.message}`,'bad');
+        await addLog('bad', `Failed to rename "${obj.name}" on the local backend: ${err.message}`);
+        return;
+      }
+    }
+    const updated = {...obj, name:backendName, type:extOf(backendName), updatedAt:Date.now()};
+    await dbPut(db(),'objects',updated);
+    setObjects(os=>os.map(o=>o.id===obj.id?updated:o));
+    await addLog('info', `Renamed "${obj.name}" to "${backendName}"`);
+    toast('Renamed successfully','good');
+  }
+
+  async function handleVerify(obj){
+    const goodReplica = obj.replicas.find(r=>!r.corrupted && nodes.find(n=>n.id===r.nodeId && n.status==='healthy'));
+    if(!goodReplica){ toast('No healthy replica available to verify','bad'); return; }
+    const rec = await dbGet(db(),'blobs',`${obj.id}:${goodReplica.nodeId}`);
+    const buf = await rec.blob.arrayBuffer();
+    const hash = await sha256Hex(buf);
+    const ok = hash===obj.checksum;
+    await addLog(ok?'good':'bad', `Integrity check ${ok?'PASSED (Valid)':'FAILED (Corrupt)'} for "${obj.name}" on ${nodeName(goodReplica.nodeId)}`);
+    toast(ok?'SHA-256 match verified':'Integrity mismatch detected', ok?'good':'bad');
+  }
+
+  async function handleCorruptReplica(obj,nodeId){
+    const key = `${obj.id}:${nodeId}`;
+    const rec = await dbGet(db(),'blobs',key);
+    if(!rec){ toast('Replica not found','bad'); return; }
+    const buf = await rec.blob.arrayBuffer();
+    if(buf.byteLength===0){ toast('Cannot corrupt an empty file','bad'); return; }
+    const bytes = new Uint8Array(buf.slice(0));
+    bytes[0] = bytes[0] ^ 0xFF;
+    const corruptedBlob = new Blob([bytes], {type: rec.blob.type});
+    await dbPut(db(),'blobs',{id:key, blob:corruptedBlob});
+    const newHash = await sha256Hex(await corruptedBlob.arrayBuffer());
+    const updatedObj = {...obj, replicas: obj.replicas.map(r=>r.nodeId===nodeId?{...r,corrupted:true}:r), status:'degraded'};
+    await dbPut(db(),'objects',updatedObj);
+    setObjects(os=>os.map(o=>o.id===obj.id?updatedObj:o));
+    await addLog('bad', `Silent bit-rot injected on "${obj.name}" at ${nodeName(nodeId)} (hash: ${newHash.slice(0,8)}… vs ${obj.checksum.slice(0,8)}…). The real backend file on disk was not touched.`);
+    toast(`Bit-rot simulated on ${nodeName(nodeId)} replica`,'bad');
+  }
+
+  async function handleRepairObject(obj){
+    const corrupted = obj.replicas.filter(r=>r.corrupted);
+    const good = obj.replicas.find(r=>!r.corrupted && nodes.find(n=>n.id===r.nodeId && n.status==='healthy'));
+    if(corrupted.length===0){ toast('No corrupted replicas found to repair','info'); return; }
+    if(!good){ toast('No healthy replica available to heal from — quorum lost','bad'); return; }
+    const goodRec = await dbGet(db(),'blobs',`${obj.id}:${good.nodeId}`);
+    for(const r of corrupted){ await dbPut(db(),'blobs',{id:`${obj.id}:${r.nodeId}`, blob:goodRec.blob}); }
+    const buf = await goodRec.blob.arrayBuffer();
+    const hash = await sha256Hex(buf);
+    const updatedObj = {...obj, replicas: obj.replicas.map(r=>({...r,corrupted:false})), status: hash===obj.checksum?'healthy':'degraded'};
+    await dbPut(db(),'objects',updatedObj);
+    setObjects(os=>os.map(o=>o.id===obj.id?updatedObj:o));
+    await addLog('good', `Healed ${corrupted.length} replica(s) of "${obj.name}" using healthy copy from ${nodeName(good.nodeId)}`);
+    toast(`"${obj.name}" repaired and verified`,'good');
+  }
+
+  async function handleNodeFailure(nodeId){
+    const node = nodes.find(n=>n.id===nodeId);
+    if(!node || node.status!=='healthy') return;
+    let workingNodes = nodes.map(n=>n.id===nodeId?{...n,status:'failed'}:n);
+    setNodes(workingNodes);
+    await dbPut(db(),'nodes', workingNodes.find(n=>n.id===nodeId));
+    await addLog('bad', `Node failure detected: ${node.name} is OFFLINE! Starting auto-migration…`);
+    toast(`${node.name} went offline`,'bad');
+
+    const factor = settings.replicationFactor;
+    let workingObjects = [...objects];
+    let migrated = 0;
+    for(let i=0;i<workingObjects.length;i++){
+      const obj = workingObjects[i];
+      if(!obj.replicas.some(r=>r.nodeId===nodeId)) continue;
+      const healthyCountForObj = obj.replicas.filter(r=>{
+        const n = workingNodes.find(x=>x.id===r.nodeId);
+        return n && n.status==='healthy' && !r.corrupted;
+      }).length;
+      if(healthyCountForObj >= factor) continue;
+      const candidate = workingNodes.filter(n=>n.status==='healthy' && !obj.replicas.some(r=>r.nodeId===n.id))
+        .sort((a,b)=>a.usedBytes-b.usedBytes)[0];
+      const source = obj.replicas.find(r=>{
+        const n = workingNodes.find(x=>x.id===r.nodeId);
+        return n && n.status==='healthy' && !r.corrupted;
+      });
+      if(!candidate || !source){ workingObjects[i] = {...obj, status:'degraded'}; continue; }
+      const srcRec = await dbGet(db(),'blobs',`${obj.id}:${source.nodeId}`);
+      await dbPut(db(),'blobs',{id:`${obj.id}:${candidate.id}`, blob:srcRec.blob});
+      const newReplicas = [...obj.replicas.filter(r=>r.nodeId!==nodeId), {nodeId:candidate.id, corrupted:false}];
+      workingObjects[i] = {...obj, replicas:newReplicas, status:'healthy'};
+      workingNodes = workingNodes.map(n=>n.id===candidate.id?{...n,usedBytes:n.usedBytes+obj.size,objectCount:(n.objectCount||0)+1}:n);
+      await dbPut(db(),'nodes', workingNodes.find(n=>n.id===candidate.id));
+      await dbPut(db(),'objects', workingObjects[i]);
+      migrated++;
+    }
+    setObjects(workingObjects);
+    setNodes(workingNodes);
+    if(migrated>0) await addLog('warn', `Re-replicated ${migrated} object(s) onto healthy NSRH nodes`);
+  }
+
+  async function handleNodeRepair(nodeId){
+    const node = nodes.find(n=>n.id===nodeId);
+    if(!node || node.status!=='failed') return;
+    const updated = {...node, status:'healthy'};
+    await dbPut(db(),'nodes',updated);
+    setNodes(ns=>ns.map(n=>n.id===nodeId?updated:n));
+    await addLog('good', `${node.name} repaired and rejoined the NSRH HUB cluster`);
+    toast(`${node.name} back online`,'good');
+  }
+
+  async function updateSettings(patch){
+    const updated = {...settings, ...patch};
+    await dbPut(db(),'settings',updated);
+    setSettings(updated);
+    await addLog('info', `Cluster settings updated: ${Object.keys(patch).map(k=>`${k}=${patch[k]}`).join(', ')}`);
+  }
+  async function clearAllData(){
+    if(!confirm('Permanently wipe all NSRH HUB objects, replicas, and activity logs? (Files already saved on the real backend disk will NOT be deleted automatically — remove nsrh_storage/ manually if needed.)')) return;
+    for(const s of ['objects','blobs','nodes','activity']) await dbClear(db(),s);
+    const seeded = await seedIfNeeded(db());
+    setNodes(seeded.nodes); setObjects([]); setActivity(seeded.activity); setSelected(null);
+    toast('NSRH HUB cluster data reset','good');
+  }
+
+  const selectedObj = objects.find(o=>o.id===selected) || null;
+
+  function stripHtml(html){
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    return (div.textContent || div.innerText || '').replace(/\s+/g,' ').trim();
+  }
+
+  async function createNote(){
+    const note = {
+      id: uid(), title:'Untitled note', content:'',
+      createdAt: Date.now(), updatedAt: Date.now(),
+    };
+    await dbPut(db(),'notes',note);
+    setNotes(n => [note, ...n]);
+    setSelectedNoteId(note.id);
+    setActiveNav('notes');
+  }
+
+  async function saveNote(id, patch){
+    const existing = notes.find(n=>n.id===id);
+    if(!existing) return;
+    const updated = {...existing, ...patch, updatedAt: Date.now()};
+    await dbPut(db(),'notes',updated);
+    setNotes(ns => {
+      const next = ns.map(n => n.id===id ? updated : n);
+      next.sort((a,b)=>b.updatedAt-a.updatedAt);
+      return next;
+    });
+  }
+
+  async function deleteNote(id){
+    const note = notes.find(n=>n.id===id);
+    if(!note) return;
+    if(!confirm(`Delete "${note.title || 'Untitled note'}"? This cannot be undone.`)) return;
+    await dbDelete(db(),'notes',id);
+    setNotes(ns => ns.filter(n=>n.id!==id));
+    if(selectedNoteId===id){
+      const remaining = notes.filter(n=>n.id!==id);
+      setSelectedNoteId(remaining.length ? remaining[0].id : null);
+    }
+    toast('Note deleted','good');
+  }
+
+  const selectedNote = notes.find(n=>n.id===selectedNoteId) || null;
+
+  function visibleObjects(){
+    let list = objects.filter(o=>{
+      if(statusFilter!=='all' && o.status!==statusFilter) return false;
+      if(nodeFilter!=='all' && !o.replicas.some(r=>r.nodeId===nodeFilter)) return false;
+      if(searchText.trim()){
+        const q = searchText.toLowerCase();
+        if(![o.name,o.type,o.checksum,o.status].some(v=>String(v).toLowerCase().includes(q))) return false;
+      }
+      return true;
+    });
+    list = [...list].sort((a,b)=>{
+      let av,bv;
+      if(sortKey==='size'){ av=a.size; bv=b.size; }
+      else if(sortKey==='replicas'){ av=a.replicas.length; bv=b.replicas.length; }
+      else if(sortKey==='createdAt'){ av=a.createdAt; bv=b.createdAt; }
+      else if(sortKey==='type'){ av=a.type; bv=b.type; }
+      else if(sortKey==='status'){ av=a.status; bv=b.status; }
+      else { av=a.name.toLowerCase(); bv=b.name.toLowerCase(); }
+      if(av<bv) return sortDir==='asc'?-1:1;
+      if(av>bv) return sortDir==='asc'?1:-1;
+      return 0;
+    });
+    return list;
+  }
+  function toggleSort(key){
+    if(sortKey===key) setSortDir(d=>d==='asc'?'desc':'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  }
+  function sortArrow(key){ return sortKey===key ? (sortDir==='asc'?' ▲':' ▼') : ''; }
+
+  const navItems = [
+    ['dashboard','Dashboard'],['objects','Objects & Files'],['nodes','Storage Nodes'],
+    ['replication','Replication'],['notes','Notes'],['logs','Activity Logs'],['settings','Settings'],
+  ];
+  const scrollTo = (key) => {
+    setActiveNav(key);
+    const map = {dashboard:'overview', objects:'objects', nodes:'nodes', replication:'replication', notes:'notes', logs:'logs', settings:'settings'};
+    const el = document.getElementById(map[key]);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
+  if(!ready){
+    return <div className="loading-screen">Opening NSRH HUB cluster database…</div>;
+  }
+
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <div className="logo-container" onClick={()=>setShowLogoModal(true)} title="Click to view brand emblem">
+          <NsrhLogoSvg size={38}/>
+          <div className="logo-brand">
+            <div className="logo-title">
+              <span className="blue">NSRH</span> <span className="white">HUB</span>
+            </div>
+            <div className="logo-sub">Distributed Storage</div>
+          </div>
+        </div>
+
+        <nav className="nav">
+          {navItems.map(([key,label]) => (
+            <button key={key} className={"nav-item"+(activeNav===key?' active':'')} onClick={()=>scrollTo(key)}>
+              <Icon name={key}/>{label}
+            </button>
+          ))}
+        </nav>
+
+        <div style={{marginTop:'auto',paddingTop:14,borderTop:'1px solid var(--border)'}}>
+          <button className="btn btn-ghost btn-sm" style={{width:'100%',justifyContent:'center'}} onClick={()=>setShowLogoModal(true)}>
+            View Brand Logo
+          </button>
+        </div>
+      </aside>
+
+      <main className="main">
+        <div className="topbar">
+          <div className="topbar-titles">
+            <h1><span style={{color:'#0062FF'}}>NSRH</span> HUB Storage</h1>
+            <p>Cryptographically verified multi-node storage with automatic replica balancing</p>
+          </div>
+          <div className="status-stack">
+            <div className="status-pill" title={backendStatus==='online' ? 'server.py is reachable and healthy' : backendStatus==='checking' ? 'Contacting server.py…' : 'server.py is not reachable — start it and refresh'}>
+              <span className={"dot "+(backendStatus==='online'?'dot-good':backendStatus==='checking'?'dot-warn':'dot-bad')}></span>
+              {backendStatus==='online' ? 'Local backend connected' : backendStatus==='checking' ? 'Checking backend…' : 'Backend offline'}
+            </div>
+            <div className="status-pill">
+              <span className={"dot "+(systemDegraded?'dot-warn':'dot-good')}></span>
+              {systemDegraded ? 'Cluster Degraded' : 'Cluster Operational'}
+            </div>
+          </div>
+        </div>
+
+        <section className="section" id="overview">
+          <div className="cards-4">
+            <div className="card">
+              <span className="card-label">Total Objects</span>
+              <span className="card-value">{totalObjects}</span>
+              <span className="card-foot">stored across NSRH HUB</span>
+            </div>
+            <div className="card">
+              <span className="card-label">Storage Used</span>
+              <span className="card-value">{formatBytes(totalStorage)}</span>
+              <span className="card-foot">of {formatBytes(totalCapacity)} cluster pool</span>
+            </div>
+            <div className="card">
+              <span className="card-label">Replication Factor</span>
+              <span className="card-value">{settings.replicationFactor}×</span>
+              <span className="card-foot">copies per object</span>
+            </div>
+            <div className="card">
+              <span className="card-label">Healthy Nodes</span>
+              <span className="card-value">{healthyCount} / {nodes.length}</span>
+              <span className={"card-foot"+(!systemDegraded?' good':'')}>{systemDegraded?'node attention required':'full cluster quorum'}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <div className="section-head"><h2>Quick Actions</h2></div>
+          <div className="actions-row">
+            <button className="btn btn-brand" onClick={()=>setShowUpload(true)}><Icon name="upload"/>Upload Object</button>
+            <button className="btn btn-ghost" onClick={()=>selectedObj ? handleDownload(selectedObj) : toast('Select an object from the table first','info')}><Icon name="download"/>Download Object</button>
+            <button className="btn btn-ghost" onClick={()=>scrollTo('objects')}>Inspect Objects</button>
+            <button className="btn btn-warn" onClick={()=>{
+              const h = [...nodes].filter(n=>n.status==='healthy').sort((a,b)=>a.usedBytes-b.usedBytes);
+              if(h.length) handleNodeFailure(h[0].id); else toast('No healthy nodes left to fail','info');
+            }}>Simulate Node Failure</button>
+          </div>
+        </section>
+
+        <section className="section" id="nodes">
+          <div className="section-head">
+            <h2>NSRH Storage Nodes</h2>
+            <span className="section-sub">{healthyCount}/{nodes.length} online</span>
+          </div>
+          <div className="nodes-grid">
+            {nodes.map(n=>(
+              <div key={n.id} className={"node"+(n.status==='failed'?' failed':'')}>
+                <div className="node-top">
+                  <span className="node-name">{n.name}</span>
+                  <span className={"badge "+(n.status==='healthy'?'badge-good':'badge-bad')}>
+                    {n.status==='healthy'?'Online':'Offline'}
+                  </span>
+                </div>
+                <div className="bar-track"><div className="bar-fill" style={{width:Math.min(100,n.usedBytes/n.capacityBytes*100)+'%', background: n.status==='failed'?'var(--bad)':'#0062FF'}}></div></div>
+                <div className="node-meta">
+                  <span>{formatBytes(n.usedBytes)}</span>
+                  <span>{n.objectCount||0} replicas</span>
+                </div>
+                {n.status==='healthy' ? (
+                  <button className="btn btn-bad btn-sm" onClick={()=>handleNodeFailure(n.id)}>Simulate Failure</button>
+                ) : (
+                  <button className="btn btn-good btn-sm" onClick={()=>handleNodeRepair(n.id)}>Repair Node</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="section" id="objects">
+          <div className="split">
+            <div className="panel">
+              <div className="section-head">
+                <h2>Stored Objects</h2>
+                <span className="section-sub">click a row to inspect replicas</span>
+              </div>
+              <div className="toolbar">
+                <input type="text" placeholder="Search by name, type, checksum…" value={searchText} onChange={e=>setSearchText(e.target.value)} style={{minWidth:220}}/>
+                <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
+                  <option value="all">All statuses</option>
+                  <option value="healthy">Healthy</option>
+                  <option value="degraded">Degraded</option>
+                </select>
+                <select value={nodeFilter} onChange={e=>setNodeFilter(e.target.value)}>
+                  <option value="all">All nodes</option>
+                  {nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}
+                </select>
+              </div>
+              <div style={{overflowX:'auto'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th className="sortable" onClick={()=>toggleSort('name')}>Name{sortArrow('name')}</th>
+                    <th className="sortable" onClick={()=>toggleSort('size')}>Size{sortArrow('size')}</th>
+                    <th className="sortable" onClick={()=>toggleSort('type')}>Type{sortArrow('type')}</th>
+                    <th className="sortable" onClick={()=>toggleSort('replicas')}>Replicas{sortArrow('replicas')}</th>
+                    <th className="sortable" onClick={()=>toggleSort('status')}>Status{sortArrow('status')}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleObjects().length===0 && (
+                    <tr><td colSpan="6" style={{textAlign:'center',color:'var(--faint)',padding:'26px 10px'}}>
+                      {objects.length===0 ? 'No objects in NSRH HUB yet — upload your first file to get started.' : 'No objects match your search.'}
+                    </td></tr>
+                  )}
+                  {visibleObjects().map(o=>(
+                    <tr key={o.id} className={"obj-row"+(selected===o.id?' selected':'')} onClick={()=>setSelected(o.id)}>
+                      <td><div className="file-cell"><span className="file-icon">📄</span>{o.name}</div></td>
+                      <td className="mono">{formatBytes(o.size)}</td>
+                      <td className="mono">{o.type}</td>
+                      <td>
+                        <div className="replica-chips">
+                          {o.replicas.map(r=>(
+                            <span key={r.nodeId} className={"chip"+(r.corrupted?' corrupt':'')}>
+                              {nodeName(r.nodeId).split(' ')[1] || nodeName(r.nodeId)}
+                              {r.corrupted && ' (corrupt)'}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td><span className={"badge "+(o.status==='healthy'?'badge-good':'badge-warn')}>{o.status==='healthy'?'Healthy':'Degraded'}</span></td>
+                      <td onClick={e=>e.stopPropagation()}>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>handleDownload(o)}>Download</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+            </div>
+
+            <div className="panel" id="replication">
+              <div className="section-head"><h2>Replication & Integrity</h2></div>
+              {!selectedObj ? (
+                <div className="detail-empty">Select any object in the table to inspect cryptographic SHA-256 integrity, replica nodes, and healing controls.</div>
+              ) : (
+                <div>
+                  <div className="detail-title">{selectedObj.name}</div>
+                  <div className="detail-sub">{formatBytes(selectedObj.size)} · {selectedObj.type} · {new Date(selectedObj.createdAt).toLocaleTimeString()}</div>
+                  <div className="detail-row"><span>SHA-256 Hash</span><span className="mono" style={{wordBreak:'break-all',textAlign:'right'}}>{selectedObj.checksum.slice(0,18)}…</span></div>
+                  <div className="detail-row"><span>Quorum Health</span>
+                    <span style={{color: selectedObj.status==='healthy'?'var(--good)':'var(--warn)', fontWeight:600}}>
+                      {selectedObj.status==='healthy'?'Healthy (Verified)':'Degraded'}
+                    </span>
+                  </div>
+                  <div className="detail-row"><span>Replica Count</span><span className="mono">{selectedObj.replicas.length} / {settings.replicationFactor}</span></div>
+                  <div className="detail-row"><span>Backend ID</span><span className="mono" style={{wordBreak:'break-all',textAlign:'right'}}>{selectedObj.backendId ? selectedObj.backendId.slice(0,14)+'…' : '—'}</span></div>
+                  <div className="replica-list">
+                    {selectedObj.replicas.map(r=>{
+                      const n = nodes.find(x=>x.id===r.nodeId);
+                      const nodeDown = n && n.status!=='healthy';
+                      return (
+                        <div key={r.nodeId} className={"replica-line"+((r.corrupted||nodeDown)?' corrupted':'')}>
+                          <span>{n?n.name:r.nodeId}{nodeDown?' (offline)':''}{r.corrupted?' — corrupted':''}</span>
+                          {!r.corrupted && !nodeDown ? (
+                            <button className="btn btn-ghost btn-sm" onClick={()=>handleCorruptReplica(selectedObj,r.nodeId)}>Corrupt</button>
+                          ) : (
+                            <span style={{color: r.corrupted?'var(--bad)':'var(--warn)'}}>●</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="actions-row" style={{marginTop:14}}>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>handleVerify(selectedObj)}>Verify</button>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>{const n=prompt('Rename to:',selectedObj.name); if(n) handleRename(selectedObj,n);}}>Rename</button>
+                    <button className="btn btn-good btn-sm" onClick={()=>handleRepairObject(selectedObj)}>Repair</button>
+                    <button className="btn btn-bad btn-sm" onClick={()=>handleDelete(selectedObj)}>Delete</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="notes">
+          <div className="split notes-split">
+            <div className="panel notes-list-panel">
+              <div className="section-head">
+                <h2>Notes</h2>
+                <button className="btn btn-brand btn-sm" onClick={createNote}><Icon name="add"/>New Note</button>
+              </div>
+              <div className="notes-list">
+                {notes.length===0 && (
+                  <div className="detail-empty">No notes yet — create your first note to get started.</div>
+                )}
+                {notes.map(n=>(
+                  <div key={n.id} className={"note-item"+(selectedNoteId===n.id?' selected':'')} onClick={()=>setSelectedNoteId(n.id)}>
+                    <div className="note-item-top">
+                      <span className="note-item-title">{n.title || 'Untitled note'}</span>
+                      <button className="note-item-delete" title="Delete note" onClick={e=>{e.stopPropagation(); deleteNote(n.id);}}>×</button>
+                    </div>
+                    <div className="note-item-preview">{stripHtml(n.content) || 'No additional text'}</div>
+                    <div className="note-item-time">{new Date(n.updatedAt).toLocaleString([], {dateStyle:'medium', timeStyle:'short'})}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="panel notes-editor-panel">
+              {!selectedNote ? (
+                <div className="detail-empty">Select a note, or create a new one, to start writing.</div>
+              ) : (
+                <NoteEditor key={selectedNote.id} note={selectedNote} onSave={patch=>saveNote(selectedNote.id,patch)}/>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="logs">
+          <div className="panel">
+            <div className="section-head"><h2>Cluster Activity Log</h2></div>
+            <ul className="activity-list">
+              {activity.map(a=>(
+                <li key={a.id} className="act-item">
+                  <span className={"act-dot "+a.type}></span>
+                  <div>
+                    <div className="act-msg">{a.msg}</div>
+                    <span className="act-time">{a.time}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section className="section" id="settings">
+          <div className="panel">
+            <div className="section-head"><h2>Cluster Configuration</h2></div>
+            <div className="settings-grid">
+              <div className="settings-card">
+                <div className="field">
+                  <label>Replication Factor</label>
+                  <select value={settings.replicationFactor} onChange={e=>updateSettings({replicationFactor:Number(e.target.value)})}>
+                    <option value={1}>1 Copy</option>
+                    <option value={2}>2 Copies</option>
+                    <option value={3}>3 Copies (Recommended)</option>
+                    <option value={4}>4 Copies</option>
+                  </select>
+                </div>
+                <div className="field" style={{marginBottom:0}}>
+                  <label>Duplicate Name Policy</label>
+                  <select value={settings.namingPolicy} onChange={e=>updateSettings({namingPolicy:e.target.value})}>
+                    <option value="reject">Reject Upload</option>
+                    <option value="rename">Auto-Rename (Append counter)</option>
+                  </select>
+                </div>
+              </div>
+              <div className="settings-card">
+                <div className="card-label" style={{marginBottom:10}}>Danger Zone</div>
+                <p style={{fontSize:'12.5px',color:'var(--dim)',margin:'0 0 12px'}}>Wipe all NSRH HUB objects, stored blobs, and reset nodes back to clean initial state.</p>
+                <button className="btn btn-bad" onClick={clearAllData}>Reset Cluster Data</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer>NSRH HUB — Real local backend storage (server.py + nsrh_storage/) with SHA-256 validation, plus an IndexedDB-simulated multi-node distributed layer for the demo.</footer>
+      </main>
+
+      {showUpload && <UploadModal onClose={()=>{ if(!uploading) setShowUpload(false); }} onUpload={handleUpload} uploading={uploading} backendOnline={backendStatus==='online'}/>}
+
+      {showLogoModal && (
+        <div className="overlay" onClick={()=>setShowLogoModal(false)}>
+          <div className="modal" onClick={e=>e.stopPropagation()} style={{textAlign:'center',padding:28}}>
+            <NsrhLogoSvg size={90}/>
+            <h2 style={{fontSize:24,fontWeight:900,margin:'14px 0 2px',letterSpacing:'-0.02em'}}>
+              <span style={{color:'#2F6BFF'}}>NSRH</span> <span style={{color:'var(--text)'}}>HUB</span>
+            </h2>
+            <div style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--dim)',marginBottom:16}}>Distributed Object Storage</div>
+            <p style={{fontSize:12.5,color:'var(--dim)',lineHeight:1.5}}>
+              High-durability distributed storage architecture featuring multi-node replication, cryptographic SHA-256 data audits, and self-healing quorum recovery.
+            </p>
+            <div className="modal-actions" style={{justifyContent:'center',marginTop:16}}>
+              <button className="btn btn-brand" onClick={()=>setShowLogoModal(false)}>Close Preview</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="toasts">
+        {toasts.map(t=>(<div key={t.id} className={"toast"+(t.kind==='info'?' info':t.kind==='bad'?' bad':'')}>{t.msg}</div>))}
+      </div>
+    </div>
+  );
+}
+
+const FONT_OPTIONS = [
+  ['Inter','System'],
+  ['Playfair Display','Playfair'],
+  ['Lora','Lora'],
+  ['Quicksand','Quicksand'],
+  ['Caveat','Handwriting'],
+  ['Courier Prime','Typewriter'],
+  ['Comic Neue','Comic'],
+];
+const SIZE_OPTIONS = [
+  ['2','Small'],['3','Normal'],['5','Large'],['6','X-Large'],['7','Huge'],
+];
+
+function NoteEditor({note, onSave}){
+  const [title,setTitle] = useState(note.title || '');
+  const editorRef = useRef(null);
+  const pendingPatch = useRef({});
+  const saveTimer = useRef(null);
+
+  useEffect(()=>{
+    if(editorRef.current) editorRef.current.innerHTML = note.content || '';
+  },[]);
+
+  useEffect(()=>{
+    return ()=>{
+      if(saveTimer.current) clearTimeout(saveTimer.current);
+      if(Object.keys(pendingPatch.current).length) onSave(pendingPatch.current);
+    };
+    // eslint-disable-next-line
+  },[]);
+
+  function scheduleSave(patch){
+    pendingPatch.current = {...pendingPatch.current, ...patch};
+    if(saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(()=>{
+      onSave(pendingPatch.current);
+      pendingPatch.current = {};
+    }, 450);
+  }
+
+  function handleTitleChange(e){
+    const value = e.target.value;
+    setTitle(value);
+    scheduleSave({title:value});
+  }
+
+  function handleContentInput(){
+    if(!editorRef.current) return;
+    scheduleSave({content: editorRef.current.innerHTML});
+  }
+
+  function exec(cmd, value){
+    if(editorRef.current) editorRef.current.focus();
+    document.execCommand(cmd, false, value);
+    handleContentInput();
+  }
+
+  function preventBlur(e){ e.preventDefault(); }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <input
+        className="note-title-input"
+        value={title}
+        placeholder="Untitled note"
+        onChange={handleTitleChange}
+      />
+      <div className="note-toolbar">
+        <div className="note-toolbar-group">
+          <select onMouseDown={preventBlur} onChange={e=>exec('formatBlock', e.target.value)} defaultValue="P" title="Paragraph style">
+            <option value="P">Normal text</option>
+            <option value="H1">Heading 1</option>
+            <option value="H2">Heading 2</option>
+            <option value="BLOCKQUOTE">Quote</option>
+          </select>
+        </div>
+        <div className="note-toolbar-group">
+          <select onMouseDown={preventBlur} onChange={e=>exec('fontName', e.target.value)} defaultValue="Inter" title="Font">
+            {FONT_OPTIONS.map(([value,label])=>(
+              <option key={value} value={value} style={{fontFamily:`'${value}'`}}>{label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="note-toolbar-group">
+          <select onMouseDown={preventBlur} onChange={e=>exec('fontSize', e.target.value)} defaultValue="3" title="Font size">
+            {SIZE_OPTIONS.map(([value,label])=>(<option key={value} value={value}>{label}</option>))}
+          </select>
+        </div>
+        <div className="note-toolbar-group">
+          <button onMouseDown={e=>{preventBlur(e); exec('bold');}} title="Bold" style={{fontFamily:'serif'}}><b>B</b></button>
+          <button onMouseDown={e=>{preventBlur(e); exec('italic');}} title="Italic" style={{fontStyle:'italic',fontFamily:'serif'}}>I</button>
+          <button onMouseDown={e=>{preventBlur(e); exec('underline');}} title="Underline" style={{textDecoration:'underline',fontFamily:'serif'}}>U</button>
+          <button onMouseDown={e=>{preventBlur(e); exec('strikeThrough');}} title="Strikethrough" style={{textDecoration:'line-through',fontFamily:'serif'}}>S</button>
+        </div>
+        <div className="note-toolbar-group">
+          <button onMouseDown={e=>{preventBlur(e); exec('justifyLeft');}} title="Align left">⯇</button>
+          <button onMouseDown={e=>{preventBlur(e); exec('justifyCenter');}} title="Align center">≡</button>
+          <button onMouseDown={e=>{preventBlur(e); exec('justifyRight');}} title="Align right">⯈</button>
+        </div>
+        <div className="note-toolbar-group">
+          <button onMouseDown={e=>{preventBlur(e); exec('insertUnorderedList');}} title="Bullet list">•≡</button>
+        </div>
+        <div className="note-toolbar-group">
+          <input type="color" defaultValue="#1B2333" title="Text color" onMouseDown={preventBlur} onChange={e=>exec('foreColor', e.target.value)}/>
+        </div>
+      </div>
+      <div
+        ref={editorRef}
+        className="note-editor-area"
+        contentEditable
+        suppressContentEditableWarning={true}
+        onInput={handleContentInput}
+      />
+    </div>
+  );
+}
+
+function UploadModal({onClose,onUpload,uploading,backendOnline}){
+  const [file,setFile] = useState(null);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <h3>Upload Object to NSRH HUB</h3>
+        <p>Select any file from your device. Real bytes are sent to the local Python backend, which independently verifies the SHA-256 checksum before saving to disk.</p>
+        {!backendOnline && !uploading && (
+          <p style={{marginTop:-8,marginBottom:14,color:'var(--bad)',fontWeight:600,fontSize:12}}>⚠ Local backend is offline. Start server.py (or double-click start_nsrh.bat) and try again.</p>
+        )}
+        <div className="field">
+          <label>Choose File</label>
+          <input type="file" onChange={e=>setFile(e.target.files[0]||null)} disabled={!!uploading}/>
+        </div>
+        {file && !uploading && (
+          <p style={{marginTop:-6,color:'var(--brand)',fontWeight:500}}>{file.name} · {(file.size/1024).toFixed(1)} KB</p>
+        )}
+        {uploading && (
+          <div>
+            <div className="progress-outer"><div className="progress-inner" style={{width:uploading.progress+'%'}}></div></div>
+            <p style={{margin:0,fontSize:12,color:'var(--dim)'}}>{uploading.phase}</p>
+          </div>
+        )}
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose} disabled={!!uploading}>Cancel</button>
+          <button className="btn btn-brand" disabled={!file || !!uploading || !backendOnline} onClick={()=>onUpload(file)}><Icon name="upload"/>Upload</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
